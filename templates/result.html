@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Verification Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+    <button class="toggle-btn" onclick="toggleDark()">🌙 Toggle Dark Mode</button>
+
+
+    <div class="container">
+
+        <div class="card">
+            <h1>📊 Resume Verification Dashboard</h1>
+            <h2>Skill Match Score: {{ score }}%</h2>
+
+            {% if score >= 50 %}
+            <span class="badge success">GENUINE PROFILE ✅</span>
+            {% else %}
+            <span class="badge danger">POSSIBLY FAKE ⚠️</span>
+            {% endif %}
+
+            <a href="/download?score={{ score }}" class="btn">📄 Download PDF Report</a>
+        </div>
+
+        <div class="card">
+            <h2>📄 Resume Skills</h2>
+            <div class="list">
+                {% for skill in resume_skills %}
+                <span>{{ skill }}</span>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>💻 GitHub Detected Skills</h2>
+            <div class="list">
+                {% for lang in github_languages %}
+                <span>{{ lang }}</span>
+                {% endfor %}
+            </div>
+            <p><b>Total Repositories:</b> {{ repos }}</p>
+        </div>
+
+        <div class="card">
+            <h2>📈 Skill Match Analysis</h2>
+            <div class="chart-box">
+                <canvas id="skillChart"></canvas>
+            </div>
+        </div>
+
+    </div>
+
+    </div>
+
+    <script>
+        const ctx = document.getElementById('skillChart');
+
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Matched Skills', 'Unmatched Skills'],
+                datasets: [{
+                    data: [{{ score }}, {{ 100 - score }}],
+        }]
+    },
+            options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+});
+    </script>
+
+    <script>
+        function toggleDark() {
+            document.body.classList.toggle("dark");
+        }
+    </script>
+
+    {% if resume_skills|length > 0 and github_languages|length > 0 %}
+    <div class="card">
+        <h2>📊 Skill Comparison</h2>
+        <div class="chart-box">
+            <canvas id="barChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        new Chart(document.getElementById("barChart"), {
+            type: "bar",
+            data: {
+                labels: ["Resume Skills", "GitHub Skills"],
+                datasets: [{
+                    label: 'Number of Skills',
+                    data: [{{ resume_skills| length }}, {{ github_languages| length }}],
+            backgroundColor: ['#4e73df', '#1cc88a']
+        }]
+    },
+            options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+});
+    </script>
+    {% endif %}
+
+
+</body>
+
+</html>

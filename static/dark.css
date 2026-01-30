@@ -1,0 +1,16 @@
+body.dark {
+    background: #121212;
+    color: #f1f1f1;
+}
+
+body.dark .card {
+    background: #1e1e1e;
+}
+
+body.dark .badge.success {
+    background: #27ae60;
+}
+
+body.dark .badge.danger {
+    background: #c0392b;
+}

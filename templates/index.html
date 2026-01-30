@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Resume Verification</title>
+</head>
+<body>
+<h2>Fake Resume Skill Verification</h2>
+
+<form action="/verify" method="post" enctype="multipart/form-data">
+    <label>Upload Resume (PDF)</label><br>
+    <input type="file" name="resume" required><br><br>
+
+    <label>GitHub Profile Link</label><br>
+    <input type="text" name="github" required><br><br>
+
+    <button type="submit">Verify</button>
+</form>
+
+</body>
+</html>
