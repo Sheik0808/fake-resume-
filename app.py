@@ -1,8 +1,9 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, redirect, send_file
 import PyPDF2
 import requests
 import os
 import sqlite3
+from bs4 import BeautifulSoup
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 
@@ -48,6 +49,27 @@ def github_skills(username):
 
     return list(languages), repo_count
 
+def get_github_contributions(username):
+    url = f"https://github.com/{username}"
+    headers = {"User-Agent": "Mozilla/5.0"}
+    response = requests.get(url, headers=headers)
+    
+    if response.status_code != 200:
+        return []
+
+    soup = BeautifulSoup(response.text, "html.parser")
+    # GitHub uses data-level on td or div elements in the contribution graph
+    contributions = soup.find_all(["td", "rect"], class_="ContributionCalendar-day")
+    
+    levels = []
+    for day in contributions:
+        level = day.get("data-level")
+        if level is not None:
+            levels.append(int(level))
+    
+    # Return last 30 days of data for visualization
+    return levels[-30:] if levels else []
+
 def init_db():
     conn = sqlite3.connect("database.db")
     cur = conn.cursor()
@@ -91,6 +113,7 @@ def verify():
 
     username = github.split("/")[-1]
     github_languages, repo_count = github_skills(username)
+    contribution_levels = get_github_contributions(username)
 
     matched = set(resume_skills).intersection(set(github_languages))
     score = int((len(matched) / len(resume_skills)) * 100) if resume_skills else 0
@@ -114,7 +137,8 @@ def verify():
         github_languages=github_languages,
         score=score,
         status=status,
-        repos=repo_count
+        repos=repo_count,
+        contribution_levels=contribution_levels
     )
 
 @app.route("/login", methods=["GET","POST"])
