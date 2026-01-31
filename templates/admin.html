@@ -1,11 +1,42 @@
-<h2>Admin Dashboard</h2>
-<table border="1">
-<tr><th>Resume</th><th>GitHub</th><th>Score</th></tr>
-{% for r in rows %}
-<tr>
-<td>{{ r[0] }}</td>
-<td>{{ r[1] }}</td>
-<td>{{ r[2] }}</td>
-</tr>
-{% endfor %}
-</table>
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/dark.css">
+</head>
+
+<body>
+
+    <button class="toggle-btn" onclick="toggleDark()">🌙 Toggle Dark Mode</button>
+
+    <div class="container">
+        <div class="card">
+            <h2>Admin Dashboard</h2>
+            <table border="1" style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+                <tr>
+                    <th>Resume</th>
+                    <th>GitHub</th>
+                    <th>Score</th>
+                </tr>
+                {% for r in rows %}
+                <tr>
+                    <td>{{ r[0] }}</td>
+                    <td>{{ r[1] }}</td>
+                    <td>{{ r[2] }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function toggleDark() {
+            document.body.classList.toggle("dark");
+        }
+    </script>
+
+</body>
+
+</html>

@@ -15,11 +15,12 @@ body {
     background: #ffffff;
     padding: 25px;
     border-radius: 12px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
     margin-bottom: 25px;
 }
 
-h1, h2 {
+h1,
+h2 {
     color: #2c3e50;
 }
 
@@ -66,4 +67,22 @@ h1, h2 {
     background: #2c3e50;
     color: white;
     cursor: pointer;
+    margin: 10px;
+}
+
+.btn {
+    display: inline-block;
+    padding: 10px 20px;
+    background: #2c3e50;
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    margin-top: 10px;
+}
+
+.btn:hover {
+    background: #34495e;
 }

@@ -1,10 +1,37 @@
 body.dark {
     background: #121212;
-    color: #f1f1f1;
+    color: #e0e0e0;
 }
 
 body.dark .card {
     background: #1e1e1e;
+}
+
+body.dark h1,
+body.dark h2,
+body.dark h3 {
+    color: #ffffff;
+}
+
+body.dark .list span {
+    background: #333333;
+    color: #e0e0e0;
+}
+
+body.dark table {
+    color: #e0e0e0;
+    border-color: #444;
+}
+
+body.dark table th {
+    background: #2c3e50;
+    color: #ffffff;
+}
+
+body.dark input {
+    background: #2d2d2d;
+    color: #ffffff;
+    border: 1px solid #444 !important;
 }
 
 body.dark .badge.success {
@@ -13,4 +40,9 @@ body.dark .badge.success {
 
 body.dark .badge.danger {
     background: #c0392b;
+}
+
+body.dark p,
+body.dark label {
+    color: #cccccc;
 }

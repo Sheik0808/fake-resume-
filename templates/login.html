@@ -1,6 +1,39 @@
-<form method="post">
-    <h2>Admin Login</h2>
-    <input name="username" placeholder="Username">
-    <input name="password" type="password" placeholder="Password">
-    <button>Login</button>
-</form>
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Admin Login</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/dark.css">
+</head>
+
+<body>
+
+    <button class="toggle-btn" onclick="toggleDark()">🌙 Toggle Dark Mode</button>
+
+    <div class="container">
+        <div class="card" style="max-width: 400px; margin: 40px auto;">
+            <form method="post">
+                <h2>Admin Login</h2>
+                <div style="margin-bottom: 15px;">
+                    <input name="username" placeholder="Username"
+                        style="width: 100%; padding: 8px; border-radius: 5px; border: 1px solid #ccc;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <input name="password" type="password" placeholder="Password"
+                        style="width: 100%; padding: 8px; border-radius: 5px; border: 1px solid #ccc;">
+                </div>
+                <button type="submit" class="toggle-btn" style="float: none; width: 100%;">Login</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function toggleDark() {
+            document.body.classList.toggle("dark");
+        }
+    </script>
+
+</body>
+
+</html>
