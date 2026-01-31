@@ -1,2 +1,6 @@
-pip install flask PyPDF2 requests
+Flask
+PyPDF2
+requests
+beautifulsoup4
+reportlab
 

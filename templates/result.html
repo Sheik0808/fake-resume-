@@ -45,6 +45,8 @@
                 {% endfor %}
             </div>
             <p><b>Total Repositories:</b> {{ repos }}</p>
+            <p><b>Total Forks:</b> {{ forks }}</p>
+            <p><b>Total Contributions (30d):</b> {{ total_contributions }}</p>
         </div>
 
         <div class="card">
@@ -89,40 +91,50 @@
 
         // Contribution Chart
         const contributionCtx = document.getElementById('contributionChart').getContext('2d');
-        const contributionData = {{ contribution_levels | tojson }};
+        const contributionData = {{ contribution_counts | tojson }};
 
         new Chart(contributionCtx, {
             type: 'line',
             data: {
-                labels: Array.from({ length: contributionData.length }, (_, i) => i + 1),
+                labels: Array.from({ length: contributionData.length }, (_, i) => 30 - i + ' days ago'),
                 datasets: [{
-                    label: 'Activity Level',
+                    label: 'Daily Contributions',
                     data: contributionData,
                     borderColor: '#2ecc71',
                     backgroundColor: 'rgba(46, 204, 113, 0.2)',
                     fill: true,
                     tension: 0.4,
-                    pointRadius: 3
+                    pointRadius: 4,
+                    pointHoverRadius: 6
                 }]
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
                 scales: {
                     y: {
                         beginAtZero: true,
-                        max: 4,
                         ticks: {
                             stepSize: 1
                         },
                         title: {
                             display: true,
-                            text: 'Level (0-4)'
+                            text: 'Contributions'
                         }
                     },
                     x: {
-                        title: {
-                            display: true,
-                            text: 'Days ago'
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                return context.parsed.y + ' contributions';
+                            }
                         }
                     }
                 }

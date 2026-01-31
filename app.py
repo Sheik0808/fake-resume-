@@ -15,6 +15,7 @@ UPLOAD_FOLDER = "resumes"
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs("reports", exist_ok=True)
 
 SKILLS_LIST = ["python", "java", "javascript", "html", "css", "sql", "flask", "django"]
 
@@ -37,38 +38,54 @@ def extract_skills_from_resume(path):
 def github_skills(username):
     url = f"https://api.github.com/users/{username}/repos"
     response = requests.get(url)
+    if response.status_code != 200:
+        return [], 0, 0
     repos = response.json()
 
     languages = set()
     repo_count = len(repos)
+    fork_count = 0
 
     for repo in repos:
         lang = repo.get("language")
         if lang:
             languages.add(lang.lower())
+        fork_count += repo.get("forks_count", 0)
 
-    return list(languages), repo_count
+    return list(languages), repo_count, fork_count
 
 def get_github_contributions(username):
-    url = f"https://github.com/{username}"
+    # Fetch the contribution graph fragment directly to ensure data is present
+    url = f"https://github.com/users/{username}/contributions"
     headers = {"User-Agent": "Mozilla/5.0"}
     response = requests.get(url, headers=headers)
     
     if response.status_code != 200:
-        return []
+        return [], 0
 
     soup = BeautifulSoup(response.text, "html.parser")
-    # GitHub uses data-level on td or div elements in the contribution graph
-    contributions = soup.find_all(["td", "rect"], class_="ContributionCalendar-day")
+    # GitHub uses data-level on td or rect elements
+    days = soup.find_all(["td", "rect"], class_="ContributionCalendar-day")
     
-    levels = []
-    for day in contributions:
-        level = day.get("data-level")
-        if level is not None:
-            levels.append(int(level))
+    counts = []
+    for day in days:
+        # Try to get count from aria-label (e.g., "5 contributions on...")
+        label = day.get("aria-label") or ""
+        import re
+        match = re.search(r"(\d+)", label)
+        if match:
+            counts.append(int(match.group(1)))
+        else:
+            # Fallback to data-level if counts are not directly available
+            level = day.get("data-level")
+            if level is not None:
+                counts.append(int(level))
     
-    # Return last 30 days of data for visualization
-    return levels[-30:] if levels else []
+    # Get last 30 days
+    recent_counts = counts[-30:] if counts else []
+    total_recent = sum(recent_counts)
+    
+    return recent_counts, total_recent
 
 def init_db():
     conn = sqlite3.connect("database.db")
@@ -112,8 +129,8 @@ def verify():
     resume_skills = extract_skills_from_resume(path)
 
     username = github.split("/")[-1]
-    github_languages, repo_count = github_skills(username)
-    contribution_levels = get_github_contributions(username)
+    github_languages, repo_count, fork_count = github_skills(username)
+    contribution_counts, total_contributions = get_github_contributions(username)
 
     matched = set(resume_skills).intersection(set(github_languages))
     score = int((len(matched) / len(resume_skills)) * 100) if resume_skills else 0
@@ -138,7 +155,9 @@ def verify():
         score=score,
         status=status,
         repos=repo_count,
-        contribution_levels=contribution_levels
+        forks=fork_count,
+        contribution_counts=contribution_counts,
+        total_contributions=total_contributions
     )
 
 @app.route("/login", methods=["GET","POST"])
