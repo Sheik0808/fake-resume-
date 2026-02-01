@@ -13,6 +13,7 @@ app = Flask(__name__)
 
 UPLOAD_FOLDER = "resumes"
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024  # 50MB limit
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs("reports", exist_ok=True)
@@ -55,37 +56,49 @@ def github_skills(username):
     return list(languages), repo_count, fork_count
 
 def get_github_contributions(username):
-    # Fetch the contribution graph fragment directly to ensure data is present
-    url = f"https://github.com/users/{username}/contributions"
+    # Fetch the contribution graph for the last 4 years
+    import datetime
+    current_year = datetime.datetime.now().year
+    years = [current_year - i for i in range(4)]
+    
+    total_4_years = 0
+    recent_counts = []
+    
     headers = {"User-Agent": "Mozilla/5.0"}
-    response = requests.get(url, headers=headers)
     
-    if response.status_code != 200:
-        return [], 0
+    for year in years:
+        url = f"https://github.com/users/{username}/contributions?from={year}-01-01&to={year}-12-31"
+        if year == current_year:
+            # For current year, we don't need the range to get the very latest
+            url = f"https://github.com/users/{username}/contributions"
+            
+        response = requests.get(url, headers=headers)
+        if response.status_code != 200:
+            continue
 
-    soup = BeautifulSoup(response.text, "html.parser")
-    # GitHub uses data-level on td or rect elements
-    days = soup.find_all(["td", "rect"], class_="ContributionCalendar-day")
-    
-    counts = []
-    for day in days:
-        # Try to get count from aria-label (e.g., "5 contributions on...")
-        label = day.get("aria-label") or ""
-        import re
-        match = re.search(r"(\d+)", label)
-        if match:
-            counts.append(int(match.group(1)))
-        else:
-            # Fallback to data-level if counts are not directly available
-            level = day.get("data-level")
-            if level is not None:
-                counts.append(int(level))
-    
-    # Get last 30 days
-    recent_counts = counts[-30:] if counts else []
-    total_recent = sum(recent_counts)
-    
-    return recent_counts, total_recent
+        soup = BeautifulSoup(response.text, "html.parser")
+        days = soup.find_all(["td", "rect"], class_="ContributionCalendar-day")
+        
+        year_counts = []
+        for day in days:
+            label = day.get("aria-label") or ""
+            import re
+            match = re.search(r"(\d+)", label)
+            if match:
+                val = int(match.group(1))
+                year_counts.append(val)
+            else:
+                level = day.get("data-level")
+                if level is not None:
+                    year_counts.append(int(level))
+        
+        total_4_years += sum(year_counts)
+        
+        # If this is the current year (or rolling year fetched via main URL), capture the last 30 days
+        if year == current_year and year_counts:
+            recent_counts = year_counts[-30:]
+            
+    return recent_counts, total_4_years
 
 def init_db():
     conn = sqlite3.connect("database.db")

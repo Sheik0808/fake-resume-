@@ -1,89 +1,135 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
-    <title>Verification Dashboard</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verification Dashboard | Anti-Fraud</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/style.css">
-    <link rel="stylesheet" href="/static/dark.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
 
-    <button class="toggle-btn" onclick="toggleDark()">🌙 Toggle Dark Mode</button>
-
+    <div class="top-bar">
+        <button class="toggle-btn" onclick="toggleDark()">🌙 Toggle Mode</button>
+    </div>
 
     <div class="container">
 
-        <div class="card">
-            <h1>📊 Resume Verification Dashboard</h1>
-            <h2>Skill Match Score: {{ score }}%</h2>
-
-            {% if score >= 50 %}
-            <span class="badge success">GENUINE PROFILE ✅</span>
-            {% else %}
-            <span class="badge danger">POSSIBLY FAKE ⚠️</span>
-            {% endif %}
-
-            <a href="/download?score={{ score }}" class="btn">📄 Download PDF Report</a>
+        <div class="card header-section">
+            <div>
+                <h1>📊 Verification Result</h1>
+                <p style="color: var(--secondary); margin: 0;">Match Analysis for the uploaded profile</p>
+            </div>
+            <div style="text-align: right;">
+                <h2 style="margin: 0; font-size: 2.5rem;">{{ score }}%</h2>
+                <div style="margin-top: 0.5rem;">
+                    {% if score >= 50 %}
+                    <span class="badge success">Verified Genuine ✅</span>
+                    {% else %}
+                    <span class="badge danger">Potential Risk ⚠️</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div
+                style="width: 100%; border-top: 1px solid var(--card-border); padding-top: 1.5rem; margin-top: 0.5rem;">
+                <a href="/download?score={{ score }}" class="btn">📄 Export PDF Report</a>
+            </div>
         </div>
 
-        <div class="card">
-            <h2>📄 Resume Skills</h2>
-            <div class="list">
-                {% for skill in resume_skills %}
-                <span>{{ skill }}</span>
-                {% endfor %}
+        <div class="grid">
+            <!-- Left Column: Skills -->
+            <div class="card">
+                <h2>📄 Resume Assets</h2>
+                <p class="stat-label">Identified Skills</p>
+                <div class="list">
+                    {% for skill in resume_skills %}
+                    <span>{{ skill }}</span>
+                    {% endfor %}
+                </div>
+
+                <h2 style="margin-top: 2rem;">💻 GitHub Intelligence</h2>
+                <p class="stat-label">Detected Technologies</p>
+                <div class="list">
+                    {% for lang in github_languages %}
+                    <span>{{ lang }}</span>
+                    {% endfor %}
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-label">Source Repos</div>
+                        <div class="stat-value">{{ repos }}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Project Forks</div>
+                        <div class="stat-value">{{ forks }}</div>
+                    </div>
+                    <div class="stat-item" style="grid-column: span 2;">
+                        <div class="stat-label">Contributions (4 Years)</div>
+                        <div class="stat-value">{{ total_contributions }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Visual Charts -->
+            <div class="card">
+                <h2>📈 Match Composition</h2>
+                <div class="chart-box" style="min-height: 250px;">
+                    <canvas id="skillChart"></canvas>
+                </div>
+
+                {% if resume_skills|length > 0 and github_languages|length > 0 %}
+                <h2 style="margin-top: 2rem;">📊 Volume Comparison</h2>
+                <div class="chart-box" style="min-height: 200px;">
+                    <canvas id="barChart"></canvas>
+                </div>
+                {% endif %}
             </div>
         </div>
 
         <div class="card">
-            <h2>💻 GitHub Detected Skills</h2>
-            <div class="list">
-                {% for lang in github_languages %}
-                <span>{{ lang }}</span>
-                {% endfor %}
-            </div>
-            <p><b>Total Repositories:</b> {{ repos }}</p>
-            <p><b>Total Forks:</b> {{ forks }}</p>
-            <p><b>Total Contributions (30d):</b> {{ total_contributions }}</p>
-        </div>
-
-        <div class="card">
-            <h2>📈 Skill Match Analysis</h2>
-            <div class="chart-box">
-                <canvas id="skillChart"></canvas>
-            </div>
-        </div>
-
-        <div class="card">
-            <h2>🔥 GitHub Daily Activity (Last 30 Days)</h2>
-            <div class="chart-box" style="width: 100%; height: 300px;">
+            <h2>🔥 Activity Heatmap (Last 30 Days)</h2>
+            <div class="chart-box" style="height: 300px;">
                 <canvas id="contributionChart"></canvas>
             </div>
         </div>
 
     </div>
 
-    </div>
-
     <script>
-        const ctx = document.getElementById('skillChart');
+        // Global Chart Defaults
+        Chart.defaults.font.family = "'Inter', sans-serif";
+        Chart.defaults.color = '{{ "#64748b" if score else "#94a3b8" }}'; // Dynamic initial color base
 
-        new Chart(ctx, {
+        const isDark = () => document.body.classList.contains('dark');
+        const getChartColor = () => isDark() ? '#94a3b8' : '#64748b';
+
+        // Skill Match Doughnut
+        const ctx = document.getElementById('skillChart');
+        const skillChart = new Chart(ctx, {
             type: 'doughnut',
             data: {
-                labels: ['Matched Skills', 'Unmatched Skills'],
+                labels: ['Matched Skills', 'Gaps'],
                 datasets: [{
                     data: [{{ score }}, {{ 100 - score }}],
-            backgroundColor: ['#2ecc71', '#e74c3c']
+            backgroundColor: ['#000000', '#6b7280'],
+            borderWidth: 0,
+            hoverOffset: 4
         }]
             },
-            options: {
+        options: {
             responsive: true,
-            plugins: {
+                maintainAspectRatio: false,
+                    cutout: '75%',
+                        plugins: {
                 legend: {
-                    position: 'bottom'
+                    position: 'bottom',
+                        labels: { usePointStyle: true, padding: 20 }
                 }
             }
         }
@@ -93,19 +139,20 @@
         const contributionCtx = document.getElementById('contributionChart').getContext('2d');
         const contributionData = {{ contribution_counts | tojson }};
 
-        new Chart(contributionCtx, {
+        const contributionChart = new Chart(contributionCtx, {
             type: 'line',
             data: {
-                labels: Array.from({ length: contributionData.length }, (_, i) => 30 - i + ' days ago'),
+                labels: Array.from({ length: contributionData.length }, (_, i) => 30 - i + 'd ago'),
                 datasets: [{
                     label: 'Daily Contributions',
                     data: contributionData,
-                    borderColor: '#2ecc71',
-                    backgroundColor: 'rgba(46, 204, 113, 0.2)',
+                    borderColor: '#000000',
+                    backgroundColor: 'rgba(0, 0, 0, 0.05)',
                     fill: true,
                     tension: 0.4,
-                    pointRadius: 4,
-                    pointHoverRadius: 6
+                    pointRadius: 2,
+                    pointHoverRadius: 5,
+                    borderWidth: 3
                 }]
             },
             options: {
@@ -114,80 +161,63 @@
                 scales: {
                     y: {
                         beginAtZero: true,
-                        ticks: {
-                            stepSize: 1
-                        },
-                        title: {
-                            display: true,
-                            text: 'Contributions'
-                        }
+                        grid: { color: 'rgba(0,0,0,0.05)' },
+                        ticks: { stepSize: 1 }
                     },
                     x: {
-                        ticks: {
-                            maxRotation: 45,
-                            minRotation: 45
-                        }
+                        grid: { display: false }
                     }
                 },
                 plugins: {
-                    tooltip: {
-                        callbacks: {
-                            label: function (context) {
-                                return context.parsed.y + ' contributions';
-                            }
-                        }
-                    }
+                    legend: { display: false }
                 }
             }
         });
-    </script>
 
-    <script>
-        function toggleDark() {
-            document.body.classList.toggle("dark");
-        }
-    </script>
-
-    {% if resume_skills|length > 0 and github_languages|length > 0 %}
-    <div class="card">
-        <h2>📊 Skill Comparison</h2>
-        <div class="chart-box">
-            <canvas id="barChart"></canvas>
-        </div>
-    </div>
-
-    <script>
-        new Chart(document.getElementById("barChart"), {
+        // Bar Chart (if exists)
+        {% if resume_skills | length > 0 and github_languages | length > 0 %}
+        const barChart = new Chart(document.getElementById("barChart"), {
             type: "bar",
             data: {
-                labels: ["Resume Skills", "GitHub Skills"],
+                labels: ["Resume", "GitHub"],
                 datasets: [{
-                    label: 'Number of Skills',
+                    label: 'Skills Count',
                     data: [{{ resume_skills| length }}, {{ github_languages| length }}],
-            backgroundColor: ['#4e73df', '#1cc88a']
-        }]
-    },
-            options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    display: false
-                }
+        backgroundColor: ['#4f46e5', '#10b981'],
+            borderRadius: 8
+                }]
             },
+        options: {
+            responsive: true,
+                maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
             scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        stepSize: 1
-                    }
-                }
+                y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } },
+                x: { grid: { display: false } }
             }
         }
-});
+        });
+        {% endif %}
+
+        function toggleDark() {
+            document.body.classList.toggle("dark");
+            const dark = isDark();
+            localStorage.setItem('theme', dark ? 'dark' : 'light');
+
+            // Update charts
+            [skillChart, contributionChart, barChart].forEach(chart => {
+                if (chart) {
+                    chart.options.scales?.y?.grid && (chart.options.scales.y.grid.color = dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)');
+                    chart.update();
+                }
+            });
+        }
+
+        // Persist theme
+        if (localStorage.getItem('theme') === 'dark') {
+            document.body.classList.add('dark');
+        }
     </script>
-    {% endif %}
-
-
 </body>
 
 </html>

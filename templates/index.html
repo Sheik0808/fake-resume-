@@ -1,35 +1,77 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
-    <title>Resume Verification</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Verification | Anti-Fraud System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/style.css">
-    <link rel="stylesheet" href="/static/dark.css">
 </head>
 
 <body>
 
-    <button class="toggle-btn" onclick="toggleDark()">🌙 Toggle Dark Mode</button>
+    <div class="top-bar">
+        <button class="toggle-btn" onclick="toggleDark()">🌙 Toggle Mode</button>
+    </div>
 
     <div class="container">
-        <div class="card">
-            <h2>Fake Resume Skill Verification</h2>
+
+        <div class="hero-section">
+            <h1>Anti-Fraud Verification</h1>
+            <p>High-precision AI analysis to verify candidate skills against their digital footprint.</p>
+        </div>
+
+        <div class="card centered-card">
+            <h2 style="text-align: center; margin-bottom: 2rem;">Verification Portal</h2>
 
             <form action="/verify" method="post" enctype="multipart/form-data">
-                <label>Upload Resume (PDF)</label><br>
-                <input type="file" name="resume" required><br><br>
+                <div class="form-group">
+                    <label>Resume Documentation (PDF)</label>
+                    <div class="upload-zone" onclick="document.getElementById('resume-input').click()">
+                        <span class="upload-icon">📁</span>
+                        <div class="upload-text" id="file-name">Select or Drop Resume</div>
+                        <div class="upload-hint">Support for PDF only (Max 50MB)</div>
+                        <input type="file" name="resume" id="resume-input" required style="display: none;"
+                            onchange="updateFileName(this)">
+                    </div>
+                </div>
 
-                <label>GitHub Profile Link</label><br>
-                <input type="text" name="github" required><br><br>
+                <div class="form-group">
+                    <label>Digital Identity (GitHub Profile)</label>
+                    <input type="text" name="github" placeholder="https://github.com/username" required>
+                </div>
 
-                <button type="submit" class="btn">Verify</button>
+                <div style="margin-top: 2.5rem;">
+                    <button type="submit" class="btn" style="width: 100%; padding: 1rem;">
+                        <span>🚀 Initialize Verification</span>
+                    </button>
+                </div>
             </form>
+        </div>
+
+        <div style="text-align: center; margin-top: 3rem; color: var(--secondary); font-size: 0.875rem;">
+            © 2026 Anti-Fraud Intelligence Systems. Secure & Encrypted Analysis.
         </div>
     </div>
 
     <script>
         function toggleDark() {
             document.body.classList.toggle("dark");
+            localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+        }
+
+        // Persist theme
+        if (localStorage.getItem('theme') === 'dark') {
+            document.body.classList.add('dark');
+        }
+
+        function updateFileName(input) {
+            const fileName = input.files[0] ? input.files[0].name : "Select or Drop Resume";
+            document.getElementById('file-name').textContent = fileName;
+            document.getElementById('file-name').style.color = "var(--primary)";
         }
     </script>
 
