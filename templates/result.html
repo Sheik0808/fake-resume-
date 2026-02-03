@@ -99,6 +99,40 @@
             </div>
         </div>
 
+        <!-- AI Suggested Skills Section -->
+        {% if suggested_skills and suggested_skills|length > 0 %}
+        <div class="card"
+            style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(168, 85, 247, 0.05) 100%); border: 2px solid rgba(99, 102, 241, 0.2);">
+            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+                <h2 style="margin: 0;">🤖 AI-Suggested Skills</h2>
+                <span class="badge"
+                    style="background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); color: white; font-size: 0.75rem;">POWERED
+                    BY AI</span>
+            </div>
+            <p style="color: var(--secondary); margin-bottom: 1.5rem;">
+                Based on your current skillset, these technologies could complement your profile and open up new
+                opportunities:
+            </p>
+            <div class="list" style="gap: 0.75rem;">
+                {% for skill in suggested_skills %}
+                <span
+                    style="background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); color: white; padding: 0.6rem 1.2rem; border-radius: 8px; font-weight: 600; text-transform: capitalize; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); transition: transform 0.2s, box-shadow 0.2s;"
+                    onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(99, 102, 241, 0.4)';"
+                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(99, 102, 241, 0.3)';">
+                    {{ skill }}
+                </span>
+                {% endfor %}
+            </div>
+            <div
+                style="margin-top: 1.5rem; padding: 1rem; background: var(--card-bg); border-radius: 8px; border-left: 4px solid #6366f1;">
+                <p style="margin: 0; font-size: 0.875rem; color: var(--secondary);">
+                    💡 <strong>Pro Tip:</strong> Learning these skills can significantly boost your profile strength and
+                    make you more competitive in the job market.
+                </p>
+            </div>
+        </div>
+        {% endif %}
+
     </div>
 
     <script>

@@ -18,7 +18,20 @@ app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024  # 50MB limit
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs("reports", exist_ok=True)
 
-SKILLS_LIST = ["python", "java", "javascript", "html", "css", "sql", "flask", "django"]
+# Expanded Skills Database with Categories
+SKILLS_DATABASE = {
+    "languages": ["python", "java", "javascript", "typescript", "go", "rust", "c++", "c#", "php", "ruby", "swift", "kotlin"],
+    "web_frontend": ["html", "css", "react", "vue", "angular", "svelte", "tailwind"],
+    "web_backend": ["flask", "django", "fastapi", "express", "spring", "node.js", "laravel"],
+    "databases": ["sql", "mysql", "postgresql", "mongodb", "redis", "sqlite", "firebase"],
+    "devops": ["docker", "kubernetes", "aws", "azure", "gcp", "jenkins", "ci/cd", "terraform"],
+    "tools": ["git", "github", "gitlab", "rest api", "graphql", "postman", "jira"],
+    "data_ml": ["pandas", "numpy", "tensorflow", "pytorch", "scikit-learn", "machine learning", "deep learning"],
+    "mobile": ["react native", "flutter", "android", "ios", "xamarin"]
+}
+
+# Flatten for resume extraction
+SKILLS_LIST = [skill for category in SKILLS_DATABASE.values() for skill in category]
 
 # ---- Resume Skill Extraction ----
 def extract_skills_from_resume(path):
@@ -54,6 +67,62 @@ def github_skills(username):
         fork_count += repo.get("forks_count", 0)
 
     return list(languages), repo_count, fork_count
+
+# AI Skill Suggestion Engine
+def suggest_skills(resume_skills, github_languages):
+    """
+    Suggests complementary skills based on existing skillset
+    """
+    combined_skills = set([s.lower() for s in resume_skills + github_languages])
+    suggestions = []
+    
+    # Define skill relationships and common tech stacks
+    skill_recommendations = {
+        "python": ["django", "flask", "fastapi", "pandas", "machine learning", "postgresql"],
+        "javascript": ["react", "node.js", "typescript", "express", "mongodb"],
+        "java": ["spring", "mysql", "docker", "kubernetes", "aws"],
+        "react": ["typescript", "redux", "tailwind", "next.js"],
+        "django": ["postgresql", "redis", "docker", "rest api"],
+        "flask": ["sqlalchemy", "postgresql", "docker", "rest api"],
+        "html": ["css", "javascript", "react", "tailwind"],
+        "css": ["html", "javascript", "tailwind", "sass"],
+        "sql": ["postgresql", "mysql", "database design"],
+        "git": ["github", "ci/cd", "docker"],
+        "docker": ["kubernetes", "ci/cd", "aws", "azure"],
+        "machine learning": ["python", "tensorflow", "pytorch", "pandas", "numpy"],
+    }
+    
+    # Category-based suggestions
+    has_backend = any(skill in combined_skills for skill in SKILLS_DATABASE["web_backend"])
+    has_frontend = any(skill in combined_skills for skill in SKILLS_DATABASE["web_frontend"])
+    has_language = any(skill in combined_skills for skill in SKILLS_DATABASE["languages"])
+    
+    # Suggest complementary skills based on current stack
+    for skill in combined_skills:
+        if skill in skill_recommendations:
+            for rec in skill_recommendations[skill]:
+                if rec.lower() not in combined_skills and rec.lower() not in suggestions:
+                    suggestions.append(rec.lower())
+    
+    # Add category-based suggestions
+    if has_backend and not has_frontend:
+        for skill in ["react", "vue", "typescript"]:
+            if skill not in combined_skills and skill not in suggestions:
+                suggestions.append(skill)
+    
+    if has_frontend and not has_backend:
+        for skill in ["node.js", "express", "mongodb"]:
+            if skill not in combined_skills and skill not in suggestions:
+                suggestions.append(skill)
+    
+    # Always suggest essential tools if not present
+    essential = ["git", "docker", "rest api", "postgresql"]
+    for skill in essential:
+        if skill not in combined_skills and skill not in suggestions:
+            suggestions.append(skill)
+    
+    # Return top 8 suggestions
+    return suggestions[:8]
 
 def get_github_contributions(username):
     # Fetch the contribution graph for the last 4 years
@@ -149,6 +218,9 @@ def verify():
     score = int((len(matched) / len(resume_skills)) * 100) if resume_skills else 0
 
     status = "GENUINE PROFILE ✅" if score >= 50 else "POSSIBLY FAKE ⚠️"
+    
+    # Generate AI skill suggestions
+    suggested_skills = suggest_skills(resume_skills, github_languages)
 
     # 🔽 🔽 🔽 ADD DATABASE CODE HERE 🔽 🔽 🔽
     conn = sqlite3.connect("database.db")
@@ -170,7 +242,8 @@ def verify():
         repos=repo_count,
         forks=fork_count,
         contribution_counts=contribution_counts,
-        total_contributions=total_contributions
+        total_contributions=total_contributions,
+        suggested_skills=suggested_skills
     )
 
 @app.route("/login", methods=["GET","POST"])
