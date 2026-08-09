@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, send_file
 import PyPDF2
 import requests
+import re
 import os
 import sqlite3
 from bs4 import BeautifulSoup
@@ -40,10 +41,16 @@ def extract_skills_from_resume(path):
         reader = PyPDF2.PdfReader(file)
         text = ""
         for page in reader.pages:
-            text += page.extract_text().lower()
+            page_text = page.extract_text()
+            if page_text:
+                text += page_text.lower()
 
     for skill in SKILLS_LIST:
-        if skill in text:
+        # Escape special regex characters in the skill name (e.g. c++, c#, node.js)
+        escaped = re.escape(skill)
+        # Use word boundaries so 'go' won't match 'google', 'git' won't match 'github', etc.
+        pattern = r'(?:^|\b|\s)' + escaped + r'(?:$|\b|\s)'
+        if re.search(pattern, text):
             skills_found.add(skill)
 
     return list(skills_found)
@@ -55,29 +62,32 @@ def github_skills(username):
     fork_count = 0
     page = 1
     
-    while True:
-        url = f"https://api.github.com/users/{username}/repos?per_page=100&page={page}"
-        response = requests.get(url)
-        if response.status_code != 200:
-            break
-        
-        repos = response.json()
-        if not repos:
-            break
+    try:
+        while True:
+            url = f"https://api.github.com/users/{username}/repos?per_page=100&page={page}"
+            response = requests.get(url, timeout=10)
+            if response.status_code != 200:
+                break
             
-        for repo in repos:
-            if repo.get("fork"):
-                fork_count += 1
-            else:
-                source_count += 1
+            repos = response.json()
+            if not repos:
+                break
                 
-            lang = repo.get("language")
-            if lang:
-                languages.add(lang.lower())
-        
-        if len(repos) < 100:
-            break
-        page += 1
+            for repo in repos:
+                if repo.get("fork"):
+                    fork_count += 1
+                else:
+                    source_count += 1
+                    
+                lang = repo.get("language")
+                if lang:
+                    languages.add(lang.lower())
+            
+            if len(repos) < 100:
+                break
+            page += 1
+    except Exception as e:
+        print(f"GitHub API error: {e}")
 
     return list(languages), source_count, fork_count
 
@@ -148,37 +158,39 @@ def get_github_contributions(username):
     
     headers = {"User-Agent": "Mozilla/5.0"}
     
-    for year in years:
-        url = f"https://github.com/users/{username}/contributions?from={year}-01-01&to={year}-12-31"
-        if year == current_year:
-            # For current year, we don't need the range to get the very latest
-            url = f"https://github.com/users/{username}/contributions"
-            
-        response = requests.get(url, headers=headers)
-        if response.status_code != 200:
-            continue
+    try:
+        for year in years:
+            url = f"https://github.com/users/{username}/contributions?from={year}-01-01&to={year}-12-31"
+            if year == current_year:
+                # For current year, we don't need the range to get the very latest
+                url = f"https://github.com/users/{username}/contributions"
+                
+            response = requests.get(url, headers=headers, timeout=10)
+            if response.status_code != 200:
+                continue
 
-        soup = BeautifulSoup(response.text, "html.parser")
-        days = soup.find_all(["td", "rect"], class_="ContributionCalendar-day")
+            soup = BeautifulSoup(response.text, "html.parser")
+            days = soup.find_all(["td", "rect"], class_="ContributionCalendar-day")
+            
+            year_counts = []
+            for day in days:
+                label = day.get("aria-label") or ""
+                match = re.search(r"(\d+)", label)
+                if match:
+                    val = int(match.group(1))
+                    year_counts.append(val)
+                else:
+                    level = day.get("data-level")
+                    if level is not None:
+                        year_counts.append(int(level))
         
-        year_counts = []
-        for day in days:
-            label = day.get("aria-label") or ""
-            import re
-            match = re.search(r"(\d+)", label)
-            if match:
-                val = int(match.group(1))
-                year_counts.append(val)
-            else:
-                level = day.get("data-level")
-                if level is not None:
-                    year_counts.append(int(level))
-        
-        total_4_years += sum(year_counts)
-        
-        # If this is the current year (or rolling year fetched via main URL), capture the last 30 days
-        if year == current_year and year_counts:
-            recent_counts = year_counts[-30:]
+            total_4_years += sum(year_counts)
+            
+            # If this is the current year (or rolling year fetched via main URL), capture the last 30 days
+            if year == current_year and year_counts:
+                recent_counts = year_counts[-30:]
+    except Exception as e:
+        print(f"GitHub contributions error: {e}")
             
     return recent_counts, total_4_years
 
@@ -231,9 +243,6 @@ def verify():
     score = int((len(matched) / len(resume_skills)) * 100) if resume_skills else 0
 
     status = "GENUINE PROFILE ✅" if score >= 50 else "POSSIBLY FAKE ⚠️"
-    
-    # Generate AI skill suggestions
-    suggested_skills = suggest_skills(resume_skills, github_languages)
 
     # 🔽 🔽 🔽 ADD DATABASE CODE HERE 🔽 🔽 🔽
     conn = sqlite3.connect("database.db")
@@ -255,8 +264,7 @@ def verify():
         repos=repo_count,
         forks=fork_count,
         contribution_counts=contribution_counts,
-        total_contributions=total_contributions,
-        suggested_skills=suggested_skills
+        total_contributions=total_contributions
     )
 
 @app.route("/login", methods=["GET","POST"])
